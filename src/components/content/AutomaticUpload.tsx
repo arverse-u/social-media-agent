@@ -7,7 +7,8 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/components/ui/use-toast';
 import { checkPlatformApiKeys } from '@/services/platformApiCheck';
-import { Globe, Clock, Calendar, Lightbulb } from 'lucide-react';
+import { Globe, Clock, Calendar, Lightbulb, Play, Square } from 'lucide-react';
+import { automaticUploadService } from '@/services/automaticUploadService';
 import WeeklySchedules from './WeeklySchedules';
 
 interface PlatformConfig {
@@ -22,6 +23,7 @@ interface PlatformConfig {
 const AutomaticUpload = () => {
   const [platforms, setPlatforms] = useState<PlatformConfig[]>([]);
   const [aiSuggestions, setAiSuggestions] = useState<any>(null);
+  const [serviceRunning, setServiceRunning] = useState(false);
   const { toast } = useToast();
 
   const defaultPlatforms: PlatformConfig[] = [
@@ -93,6 +95,13 @@ const AutomaticUpload = () => {
     if (suggestions) {
       setAiSuggestions(JSON.parse(suggestions));
     }
+
+    // Check if service should be running
+    const shouldRun = localStorage.getItem('astrumverse_auto_service_running');
+    if (shouldRun === 'true') {
+      automaticUploadService.start();
+      setServiceRunning(true);
+    }
   }, []);
 
   const savePlatforms = (updatedPlatforms: PlatformConfig[]) => {
@@ -116,11 +125,59 @@ const AutomaticUpload = () => {
     });
   };
 
+  const handleServiceToggle = () => {
+    if (serviceRunning) {
+      automaticUploadService.stop();
+      setServiceRunning(false);
+      localStorage.setItem('astrumverse_auto_service_running', 'false');
+      toast({
+        title: 'Automatic service stopped',
+        description: 'Scheduled content publishing has been paused',
+      });
+    } else {
+      automaticUploadService.start();
+      setServiceRunning(true);
+      localStorage.setItem('astrumverse_auto_service_running', 'true');
+      toast({
+        title: 'Automatic service started',
+        description: 'Content will be published according to your schedules',
+      });
+    }
+  };
+
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-3xl font-bold text-white">Automatic Upload</h2>
-        <p className="text-muted-foreground">Configure autonomous content publishing and manage weekly schedules</p>
+      <div className="flex justify-between items-start">
+        <div>
+          <h2 className="text-3xl font-bold text-white">Automatic Upload</h2>
+          <p className="text-muted-foreground">Configure autonomous content publishing and manage weekly schedules</p>
+        </div>
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
+            <Switch 
+              checked={serviceRunning} 
+              onCheckedChange={handleServiceToggle}
+            />
+            <Label>Auto Service</Label>
+          </div>
+          <Button
+            variant={serviceRunning ? "destructive" : "default"}
+            onClick={handleServiceToggle}
+            className="flex items-center gap-2"
+          >
+            {serviceRunning ? (
+              <>
+                <Square className="h-4 w-4" />
+                Stop Service
+              </>
+            ) : (
+              <>
+                <Play className="h-4 w-4" />
+                Start Service
+              </>
+            )}
+          </Button>
+        </div>
       </div>
 
       <Tabs defaultValue="platforms" className="w-full">
