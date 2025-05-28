@@ -1,6 +1,5 @@
-
-import { groqService } from './groqService';
-import { geminiService } from './geminiService';
+import { generateContentWithGroq } from './groqService';
+import { generateTags } from './geminiService';
 
 interface PlatformConfig {
   id: string;
@@ -156,8 +155,14 @@ async function generateScheduleReasoning(
     Analytics: ${analytics ? `${analytics.engagement}% engagement rate, ${analytics.followers} followers` : 'No analytics available'}
     Focus on timing and audience behavior.`;
     
-    const reasoning = await groqService.generateContent(prompt);
-    return reasoning.slice(0, 80) + (reasoning.length > 80 ? '...' : '');
+    // Try to use Groq first, fallback to simple reasoning
+    try {
+      const result = await generateContentWithGroq(prompt, process.env.GROQ_API_KEY || '', 'llama3-8b-8192');
+      return result.content.slice(0, 80) + (result.content.length > 80 ? '...' : '');
+    } catch (groqError) {
+      console.log('Groq service unavailable, using fallback reasoning');
+      return `Optimized for ${platform.name} audience engagement patterns`;
+    }
   } catch (error) {
     return `Optimized for ${platform.name} audience engagement patterns`;
   }

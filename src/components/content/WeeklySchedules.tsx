@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -307,7 +306,6 @@ const WeeklySchedules: React.FC<WeeklySchedulesProps> = ({ platforms, aiOptimiza
                                   <Switch 
                                     checked={schedule.enabled}
                                     onCheckedChange={() => toggleSchedule(schedule.id)}
-                                    size="sm"
                                   />
                                   <span className="text-xs text-muted-foreground">
                                     {schedule.enabled ? 'Active' : 'Inactive'}
