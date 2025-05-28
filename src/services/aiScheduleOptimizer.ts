@@ -1,6 +1,7 @@
 
-import { callGroqAPI } from './groqService';
-import { callGeminiAPI } from './geminiService';
+import { generateContentWithGroq } from './groqService';
+import { generateOptimizedContent } from './geminiService';
+import { loadApiKeys } from '@/config/apiKeys';
 
 interface ScheduleOptimization {
   platformId: string;
@@ -19,6 +20,54 @@ interface PlatformAnalytics {
   impressions: number;
   clicks: number;
   bestPerformingTimes: string[];
+}
+
+// Create the missing API call functions
+export async function callGroqAPI(prompt: string, model: string = 'llama3-8b-8192') {
+  const keys = loadApiKeys();
+  if (!keys.ai?.groq?.apiKey) {
+    throw new Error('Groq API key not configured');
+  }
+  
+  return await generateContentWithGroq(prompt, keys.ai.groq.apiKey, model);
+}
+
+export async function callGeminiAPI(prompt: string) {
+  const keys = loadApiKeys();
+  if (!keys.ai?.gemini?.apiKey) {
+    throw new Error('Gemini API key not configured');
+  }
+
+  const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${keys.ai.gemini.apiKey}`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      contents: [
+        {
+          parts: [
+            {
+              text: prompt,
+            },
+          ],
+        },
+      ],
+      generationConfig: {
+        temperature: 0.7,
+        maxOutputTokens: 2000,
+      },
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Gemini API error: ${response.status} ${response.statusText}`);
+  }
+
+  const data = await response.json();
+  const content = data.candidates?.[0]?.content?.parts?.[0]?.text;
+  
+  return { content };
 }
 
 export async function optimizeSchedulesWithAI(platformAnalytics: PlatformAnalytics[]): Promise<ScheduleOptimization[]> {
