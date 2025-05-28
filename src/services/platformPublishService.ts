@@ -117,11 +117,21 @@ export async function publishToTwitter(content: ContentItem, formData: any): Pro
     let mediaIds: string[] = [];
     
     // Handle media upload if files are present
-    if (formData.mediaFiles && formData.mediaFiles.length > 0) {
-      for (const file of Array.from(formData.mediaFiles)) {
+    if (formData.mediaFiles && formData.mediaFiles instanceof FileList && formData.mediaFiles.length > 0) {
+      for (let i = 0; i < formData.mediaFiles.length; i++) {
+        const file = formData.mediaFiles[i] as File;
         const mediaId = await uploadMediaToTwitter(file, apiKeys.twitter.bearerToken);
         if (mediaId) {
           mediaIds.push(mediaId);
+        }
+      }
+    } else if (formData.mediaFiles && Array.isArray(formData.mediaFiles)) {
+      for (const file of formData.mediaFiles) {
+        if (file instanceof File) {
+          const mediaId = await uploadMediaToTwitter(file, apiKeys.twitter.bearerToken);
+          if (mediaId) {
+            mediaIds.push(mediaId);
+          }
         }
       }
     }
@@ -190,7 +200,10 @@ export async function publishToLinkedIn(content: ContentItem, formData: any): Pr
     let mediaUrn: string | undefined;
     
     if (formData.mediaFiles && formData.mediaFiles.length > 0) {
-      mediaUrn = await uploadMediaToLinkedIn(formData.mediaFiles[0], apiKeys.linkedin.accessToken);
+      const file = formData.mediaFiles instanceof FileList ? formData.mediaFiles[0] : formData.mediaFiles[0];
+      if (file instanceof File) {
+        mediaUrn = await uploadMediaToLinkedIn(file, apiKeys.linkedin.accessToken);
+      }
     }
 
     const postData = {
