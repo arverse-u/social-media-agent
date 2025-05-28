@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/components/ui/use-toast';
-import { Calendar, Clock, Plus, Edit, Trash2, Bot, User } from 'lucide-react';
+import { Calendar, Clock, Plus, Edit, Trash2, User } from 'lucide-react';
 
 interface PlatformConfig {
   id: string;
@@ -24,8 +24,7 @@ interface WeeklySchedule {
   dayOfWeek: 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday' | 'sunday';
   time: string;
   enabled: boolean;
-  createdBy: 'ai' | 'user';
-  aiReasoning?: string;
+  createdBy: 'user';
   createdAt: string;
 }
 
@@ -37,10 +36,9 @@ interface PlatformSettings {
 
 interface WeeklySchedulesProps {
   platforms: PlatformConfig[];
-  aiOptimizationEnabled: boolean;
 }
 
-const WeeklySchedules: React.FC<WeeklySchedulesProps> = ({ platforms, aiOptimizationEnabled }) => {
+const WeeklySchedules: React.FC<WeeklySchedulesProps> = ({ platforms }) => {
   const [schedules, setSchedules] = useState<WeeklySchedule[]>([]);
   const [platformSettings, setPlatformSettings] = useState<PlatformSettings[]>([]);
   const [editingSchedule, setEditingSchedule] = useState<string | null>(null);
@@ -144,87 +142,11 @@ const WeeklySchedules: React.FC<WeeklySchedulesProps> = ({ platforms, aiOptimiza
     );
     
     savePlatformSettings(updatedSettings);
-  };
-
-  const generateAISchedules = async () => {
-    if (!aiOptimizationEnabled) return;
-
-    try {
-      // Simulate AI schedule generation
-      const aiSchedules: WeeklySchedule[] = [];
-      
-      platforms.filter(p => p.enabled && p.hasApiKeys).forEach(platform => {
-        const platformSetting = platformSettings.find(s => s.platformId === platform.id);
-        const postsPerDay = platformSetting?.postsPerDay || 1;
-        
-        // Generate optimal times based on platform type
-        const optimalTimes = getOptimalTimesForPlatform(platform.id, postsPerDay);
-        
-        optimalTimes.forEach((timeSlot, index) => {
-          const schedule: WeeklySchedule = {
-            id: `ai-schedule-${Date.now()}-${platform.id}-${index}`,
-            platformId: platform.id,
-            dayOfWeek: timeSlot.day,
-            time: timeSlot.time,
-            enabled: true,
-            createdBy: 'ai',
-            aiReasoning: timeSlot.reasoning,
-            createdAt: new Date().toISOString(),
-          };
-          aiSchedules.push(schedule);
-        });
-      });
-
-      // Remove existing AI schedules and add new ones
-      const userSchedules = schedules.filter(s => s.createdBy === 'user');
-      const updatedSchedules = [...userSchedules, ...aiSchedules];
-      saveSchedules(updatedSchedules);
-
-      toast({
-        title: 'AI schedules generated',
-        description: `Created ${aiSchedules.length} optimized schedules`,
-      });
-    } catch (error) {
-      toast({
-        title: 'Failed to generate AI schedules',
-        description: 'Please try again later',
-        variant: 'destructive',
-      });
-    }
-  };
-
-  const getOptimalTimesForPlatform = (platformId: string, postsPerDay: number) => {
-    // AI-powered optimal times based on platform analytics
-    const timeSlots = [];
     
-    switch (platformId) {
-      case 'twitter':
-        if (postsPerDay >= 1) timeSlots.push({ day: 'tuesday' as const, time: '09:00', reasoning: 'Peak engagement for professional content' });
-        if (postsPerDay >= 2) timeSlots.push({ day: 'thursday' as const, time: '15:00', reasoning: 'High afternoon activity' });
-        if (postsPerDay >= 3) timeSlots.push({ day: 'saturday' as const, time: '11:00', reasoning: 'Weekend engagement boost' });
-        break;
-      case 'linkedin':
-        if (postsPerDay >= 1) timeSlots.push({ day: 'wednesday' as const, time: '08:00', reasoning: 'Business audience morning check' });
-        if (postsPerDay >= 2) timeSlots.push({ day: 'friday' as const, time: '17:00', reasoning: 'End of week networking' });
-        break;
-      case 'instagram':
-        if (postsPerDay >= 1) timeSlots.push({ day: 'sunday' as const, time: '19:00', reasoning: 'Peak visual content consumption' });
-        if (postsPerDay >= 2) timeSlots.push({ day: 'wednesday' as const, time: '20:00', reasoning: 'Mid-week engagement spike' });
-        break;
-      case 'hashnode':
-        if (postsPerDay >= 1) timeSlots.push({ day: 'monday' as const, time: '10:00', reasoning: 'Developer community active time' });
-        break;
-      case 'devTo':
-        if (postsPerDay >= 1) timeSlots.push({ day: 'tuesday' as const, time: '14:00', reasoning: 'Tech community peak hours' });
-        break;
-      case 'youtube':
-        if (postsPerDay >= 1) timeSlots.push({ day: 'friday' as const, time: '16:00', reasoning: 'Weekend viewing preparation' });
-        break;
-      default:
-        if (postsPerDay >= 1) timeSlots.push({ day: 'monday' as const, time: '09:00', reasoning: 'General optimal posting time' });
-    }
-    
-    return timeSlots.slice(0, postsPerDay);
+    toast({
+      title: 'Platform settings updated',
+      description: `${field === 'postsPerDay' ? 'Posts per day' : 'Status'} updated for platform`,
+    });
   };
 
   const getPlatformSchedules = (platformId: string) => {
@@ -237,21 +159,9 @@ const WeeklySchedules: React.FC<WeeklySchedulesProps> = ({ platforms, aiOptimiza
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-start">
-        <div>
-          <h3 className="text-2xl font-bold text-white">Weekly Schedules</h3>
-          <p className="text-muted-foreground">Manage posting schedules for each platform</p>
-        </div>
-        
-        {aiOptimizationEnabled && (
-          <Button 
-            onClick={generateAISchedules}
-            className="bg-astrum-purple hover:bg-astrum-purple/80"
-          >
-            <Bot className="h-4 w-4 mr-2" />
-            Generate AI Schedules
-          </Button>
-        )}
+      <div>
+        <h3 className="text-2xl font-bold text-white">Weekly Schedules</h3>
+        <p className="text-muted-foreground">Create and manage posting schedules for each platform. Set posts per day and specific timing for each platform.</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -277,22 +187,26 @@ const WeeklySchedules: React.FC<WeeklySchedulesProps> = ({ platforms, aiOptimiza
               
               <CardContent className="space-y-4">
                 <div className="space-y-2">
-                  <Label>Posts per day</Label>
+                  <Label htmlFor={`posts-${platform.id}`}>Posts per day</Label>
                   <Input
+                    id={`posts-${platform.id}`}
                     type="number"
                     min="1"
                     max="10"
                     value={platformSetting.postsPerDay}
                     onChange={(e) => handlePlatformSettingChange(platform.id, 'postsPerDay', parseInt(e.target.value) || 1)}
-                    className="w-20"
+                    className="w-24"
                   />
+                  <p className="text-xs text-muted-foreground">
+                    Number of posts to publish per day on this platform
+                  </p>
                 </div>
                 
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
                     <Label className="flex items-center gap-2">
                       <Calendar className="h-4 w-4" />
-                      Schedules ({platformSchedules.length})
+                      Weekly Schedules ({platformSchedules.length})
                     </Label>
                     <Button 
                       size="sm" 
@@ -301,12 +215,16 @@ const WeeklySchedules: React.FC<WeeklySchedulesProps> = ({ platforms, aiOptimiza
                       disabled={!platform.hasApiKeys}
                     >
                       <Plus className="h-4 w-4 mr-1" />
-                      Add
+                      Add Schedule
                     </Button>
                   </div>
                   
                   {platformSchedules.length === 0 ? (
-                    <p className="text-sm text-muted-foreground italic">No schedules configured</p>
+                    <div className="text-center py-4 border-2 border-dashed border-muted rounded-lg">
+                      <Calendar className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
+                      <p className="text-sm text-muted-foreground">No schedules configured</p>
+                      <p className="text-xs text-muted-foreground">Click "Add Schedule" to create your first posting schedule</p>
+                    </div>
                   ) : (
                     <div className="space-y-2">
                       {platformSchedules.map((schedule) => (
@@ -347,22 +265,16 @@ const WeeklySchedules: React.FC<WeeklySchedulesProps> = ({ platforms, aiOptimiza
                                     <Clock className="h-3 w-3" />
                                     {dayOptions.find(d => d.value === schedule.dayOfWeek)?.label} at {schedule.time}
                                     <div className="flex items-center gap-1">
-                                      {schedule.createdBy === 'ai' ? (
-                                        <Bot className="h-3 w-3 text-blue-500" />
-                                      ) : (
-                                        <User className="h-3 w-3 text-green-500" />
-                                      )}
+                                      <User className="h-3 w-3 text-blue-500" />
                                       <Switch 
                                         checked={schedule.enabled} 
                                         onCheckedChange={(enabled) => handleUpdateSchedule(schedule.id, { enabled })}
                                       />
                                     </div>
                                   </div>
-                                  {schedule.aiReasoning && (
-                                    <div className="text-xs text-blue-600">
-                                      {schedule.aiReasoning}
-                                    </div>
-                                  )}
+                                  <div className="text-xs text-muted-foreground">
+                                    Created by user on {new Date(schedule.createdAt).toLocaleDateString()}
+                                  </div>
                                 </div>
                                 <div className="flex items-center gap-1">
                                   <Button 
@@ -395,6 +307,18 @@ const WeeklySchedules: React.FC<WeeklySchedulesProps> = ({ platforms, aiOptimiza
           );
         })}
       </div>
+      
+      {platforms.filter(p => p.enabled).length === 0 && (
+        <Card className="bg-card/80 backdrop-blur-sm border-border">
+          <CardContent className="text-center py-8">
+            <Calendar className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+            <h3 className="text-lg font-medium mb-2">No Platforms Enabled</h3>
+            <p className="text-muted-foreground">
+              Enable platforms in the Platform Settings tab to create schedules
+            </p>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 };

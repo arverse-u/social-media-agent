@@ -25,11 +25,11 @@ interface PlatformAnalytics {
 // Create the missing API call functions
 export async function callGroqAPI(prompt: string, model: string = 'llama3-8b-8192') {
   const keys = loadApiKeys();
-  if (!keys.ai?.groq?.apiKey) {
-    throw new Error('Groq API key not configured');
+  if (!keys.ai?.openai?.apiKey) {
+    throw new Error('API key not configured');
   }
   
-  return await generateContentWithGroq(prompt, keys.ai.groq.apiKey, model);
+  return await generateContentWithGroq(prompt, keys.ai.openai.apiKey, model);
 }
 
 export async function callGeminiAPI(prompt: string) {
@@ -70,7 +70,7 @@ export async function callGeminiAPI(prompt: string) {
   return { content };
 }
 
-export async function optimizeSchedulesWithAI(platformAnalytics: PlatformAnalytics[]): Promise<ScheduleOptimization[]> {
+export async function generateOptimalTimingSuggestions(platformAnalytics: PlatformAnalytics[]): Promise<ScheduleOptimization[]> {
   try {
     const prompt = `
     Based on the following platform analytics data, suggest optimal posting times for each platform.
@@ -80,7 +80,7 @@ export async function optimizeSchedulesWithAI(platformAnalytics: PlatformAnalyti
     ${JSON.stringify(platformAnalytics, null, 2)}
     
     For each platform, provide:
-    1. Optimal posting days and times
+    1. Top 3 optimal posting days and times
     2. Reasoning based on analytics
     3. Engagement score prediction (1-10)
     
@@ -100,33 +100,38 @@ export async function optimizeSchedulesWithAI(platformAnalytics: PlatformAnalyti
     ]
     `;
 
-    // Try Groq first, fallback to Gemini
+    // Try Gemini first for suggestions
     let response;
     try {
-      response = await callGroqAPI(prompt, 'llama-3.1-8b-instant');
-    } catch (error) {
-      console.log('Groq API failed, trying Gemini...');
       response = await callGeminiAPI(prompt);
+    } catch (error) {
+      console.log('Gemini API failed, generating fallback suggestions...');
+      return generateFallbackSuggestions(platformAnalytics);
     }
 
     if (response?.content) {
       try {
-        const optimizations = JSON.parse(response.content);
-        return optimizations;
+        const suggestions = JSON.parse(response.content);
+        // Store suggestions in localStorage for user to see
+        localStorage.setItem('astrumverse_ai_timing_suggestions', JSON.stringify({
+          suggestions,
+          generatedAt: new Date().toISOString()
+        }));
+        return suggestions;
       } catch (parseError) {
         console.error('Failed to parse AI response:', parseError);
-        return generateFallbackSchedules(platformAnalytics);
+        return generateFallbackSuggestions(platformAnalytics);
       }
     }
 
-    return generateFallbackSchedules(platformAnalytics);
+    return generateFallbackSuggestions(platformAnalytics);
   } catch (error) {
-    console.error('Error optimizing schedules with AI:', error);
-    return generateFallbackSchedules(platformAnalytics);
+    console.error('Error generating timing suggestions:', error);
+    return generateFallbackSuggestions(platformAnalytics);
   }
 }
 
-function generateFallbackSchedules(platformAnalytics: PlatformAnalytics[]): ScheduleOptimization[] {
+function generateFallbackSuggestions(platformAnalytics: PlatformAnalytics[]): ScheduleOptimization[] {
   return platformAnalytics.map(analytics => ({
     platformId: analytics.platform,
     optimalTimes: [
@@ -135,39 +140,60 @@ function generateFallbackSchedules(platformAnalytics: PlatformAnalytics[]): Sche
         time: '10:00',
         reasoning: 'Default optimal time based on general best practices',
         engagementScore: 7
+      },
+      {
+        day: 'thursday',
+        time: '15:00',
+        reasoning: 'Afternoon engagement peak',
+        engagementScore: 6
+      },
+      {
+        day: 'saturday',
+        time: '12:00',
+        reasoning: 'Weekend activity time',
+        engagementScore: 6
       }
     ]
   }));
 }
 
-export function scheduleHourlyOptimization(): void {
-  // Schedule optimization to run every hour
-  const runOptimization = async () => {
-    console.log('Running hourly AI schedule optimization...');
+export function scheduleNightlyAnalysisAndSuggestions(): void {
+  // Schedule analysis to run every day at 12:00 AM IST
+  const scheduleNextAnalysis = () => {
+    const now = new Date();
+    const istTime = new Date(now.getTime() + (5.5 * 60 * 60 * 1000));
+    const target = new Date(istTime);
+    target.setHours(0, 0, 0, 0); // 12:00 AM IST
     
-    try {
-      // Get current analytics from localStorage or service
-      const analyticsData = getStoredAnalytics();
-      
-      if (analyticsData.length > 0) {
-        const optimizations = await optimizeSchedulesWithAI(analyticsData);
-        
-        // Check if it's night time (12:00 AM IST) to update schedules for next day
-        const now = new Date();
-        const istTime = new Date(now.getTime() + (5.5 * 60 * 60 * 1000));
-        
-        if (istTime.getHours() === 0) { // 12:00 AM IST
-          updateSchedulesForNextDay(optimizations);
-        }
-      }
-    } catch (error) {
-      console.error('Error in hourly optimization:', error);
+    // If target time has passed today, schedule for tomorrow
+    if (target <= istTime) {
+      target.setDate(target.getDate() + 1);
     }
+    
+    const timeUntilTarget = target.getTime() - now.getTime();
+    
+    setTimeout(async () => {
+      console.log('Starting nightly analytics analysis and suggestion generation at', new Date().toISOString());
+      
+      try {
+        const analyticsData = getStoredAnalytics();
+        
+        if (analyticsData.length > 0) {
+          await generateOptimalTimingSuggestions(analyticsData);
+          console.log('AI timing suggestions generated and stored');
+        }
+      } catch (error) {
+        console.error('Error in nightly analysis:', error);
+      }
+      
+      // Schedule next analysis
+      scheduleNextAnalysis();
+    }, timeUntilTarget);
+    
+    console.log(`Next AI analysis scheduled for: ${target.toISOString()}`);
   };
-
-  // Run immediately and then every hour
-  runOptimization();
-  setInterval(runOptimization, 60 * 60 * 1000); // Every hour
+  
+  scheduleNextAnalysis();
 }
 
 function getStoredAnalytics(): PlatformAnalytics[] {
@@ -177,43 +203,5 @@ function getStoredAnalytics(): PlatformAnalytics[] {
   } catch (error) {
     console.error('Error getting stored analytics:', error);
     return [];
-  }
-}
-
-function updateSchedulesForNextDay(optimizations: ScheduleOptimization[]): void {
-  try {
-    const currentSchedules = JSON.parse(localStorage.getItem('astrumverse_weekly_schedules') || '[]');
-    const aiOptimizationEnabled = JSON.parse(localStorage.getItem('astrumverse_ai_optimization') || 'false');
-    
-    if (!aiOptimizationEnabled) return;
-    
-    // Remove existing AI schedules
-    const userSchedules = currentSchedules.filter((s: any) => s.createdBy === 'user');
-    
-    // Generate new AI schedules based on optimizations
-    const newAiSchedules: any[] = [];
-    
-    optimizations.forEach(optimization => {
-      optimization.optimalTimes.forEach((timeSlot, index) => {
-        newAiSchedules.push({
-          id: `ai-schedule-${Date.now()}-${optimization.platformId}-${index}`,
-          platformId: optimization.platformId,
-          dayOfWeek: timeSlot.day,
-          time: timeSlot.time,
-          enabled: true,
-          createdBy: 'ai',
-          aiReasoning: timeSlot.reasoning,
-          createdAt: new Date().toISOString(),
-        });
-      });
-    });
-    
-    // Save updated schedules
-    const updatedSchedules = [...userSchedules, ...newAiSchedules];
-    localStorage.setItem('astrumverse_weekly_schedules', JSON.stringify(updatedSchedules));
-    
-    console.log(`Updated AI schedules for next day: ${newAiSchedules.length} schedules created`);
-  } catch (error) {
-    console.error('Error updating schedules for next day:', error);
   }
 }

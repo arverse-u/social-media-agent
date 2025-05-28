@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/components/ui/use-toast';
 import { checkPlatformApiKeys } from '@/services/platformApiCheck';
-import { Bot, Clock, Globe, Calendar } from 'lucide-react';
+import { Globe, Clock, Calendar, Lightbulb } from 'lucide-react';
 import WeeklySchedules from './WeeklySchedules';
 
 interface PlatformConfig {
@@ -21,7 +21,7 @@ interface PlatformConfig {
 
 const AutomaticUpload = () => {
   const [platforms, setPlatforms] = useState<PlatformConfig[]>([]);
-  const [aiOptimizationEnabled, setAiOptimizationEnabled] = useState(true);
+  const [aiSuggestions, setAiSuggestions] = useState<any>(null);
   const { toast } = useToast();
 
   const defaultPlatforms: PlatformConfig[] = [
@@ -88,10 +88,10 @@ const AutomaticUpload = () => {
     
     setPlatforms(platformConfigs);
 
-    // Load AI optimization setting
-    const aiSetting = localStorage.getItem('astrumverse_ai_optimization');
-    if (aiSetting) {
-      setAiOptimizationEnabled(JSON.parse(aiSetting));
+    // Load AI suggestions if available
+    const suggestions = localStorage.getItem('astrumverse_ai_timing_suggestions');
+    if (suggestions) {
+      setAiSuggestions(JSON.parse(suggestions));
     }
   }, []);
 
@@ -116,60 +116,21 @@ const AutomaticUpload = () => {
     });
   };
 
-  const handleAiOptimizationToggle = () => {
-    const newValue = !aiOptimizationEnabled;
-    setAiOptimizationEnabled(newValue);
-    localStorage.setItem('astrumverse_ai_optimization', JSON.stringify(newValue));
-    
-    toast({
-      title: `AI optimization ${newValue ? 'enabled' : 'disabled'}`,
-      description: newValue ? 'AI will automatically create and optimize content schedules' : 'You will manually set schedules',
-    });
-  };
-
   return (
     <div className="space-y-6">
       <div>
         <h2 className="text-3xl font-bold text-white">Automatic Upload</h2>
-        <p className="text-muted-foreground">Configure autonomous content publishing with AI optimization</p>
+        <p className="text-muted-foreground">Configure autonomous content publishing and manage weekly schedules</p>
       </div>
 
       <Tabs defaultValue="platforms" className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="platforms">Platform Settings</TabsTrigger>
           <TabsTrigger value="schedules">Weekly Schedules</TabsTrigger>
+          <TabsTrigger value="suggestions">AI Suggestions</TabsTrigger>
         </TabsList>
 
         <TabsContent value="platforms" className="space-y-6">
-          <Card className="bg-card/80 backdrop-blur-sm border-border">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Bot className="h-5 w-5 text-astrum-teal" />
-                Global AI Optimization
-              </CardTitle>
-              <CardDescription>
-                Control how content schedules are managed across all platforms
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label>AI Auto-Schedule</Label>
-                  <p className="text-sm text-muted-foreground">
-                    {aiOptimizationEnabled 
-                      ? 'AI will automatically create and optimize content schedules daily'
-                      : 'You will manually create and manage content schedules'
-                    }
-                  </p>
-                </div>
-                <Switch 
-                  checked={aiOptimizationEnabled} 
-                  onCheckedChange={handleAiOptimizationToggle}
-                />
-              </div>
-            </CardContent>
-          </Card>
-
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {platforms.map((platform) => (
               <Card key={platform.id} className="bg-card/80 backdrop-blur-sm border-border">
@@ -214,10 +175,61 @@ const AutomaticUpload = () => {
         </TabsContent>
 
         <TabsContent value="schedules">
-          <WeeklySchedules 
-            platforms={platforms} 
-            aiOptimizationEnabled={aiOptimizationEnabled}
-          />
+          <WeeklySchedules platforms={platforms} />
+        </TabsContent>
+
+        <TabsContent value="suggestions">
+          <Card className="bg-card/80 backdrop-blur-sm border-border">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Lightbulb className="h-5 w-5 text-yellow-500" />
+                AI Timing Suggestions
+              </CardTitle>
+              <CardDescription>
+                AI analyzes your platform analytics nightly and suggests optimal posting times
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {aiSuggestions ? (
+                <div className="space-y-4">
+                  <p className="text-sm text-muted-foreground">
+                    Last generated: {new Date(aiSuggestions.generatedAt).toLocaleString()}
+                  </p>
+                  <div className="grid gap-4">
+                    {aiSuggestions.suggestions?.map((suggestion: any) => (
+                      <div key={suggestion.platformId} className="border rounded-lg p-4">
+                        <h4 className="font-medium capitalize">{suggestion.platformId}</h4>
+                        <div className="mt-2 space-y-2">
+                          {suggestion.optimalTimes?.map((time: any, index: number) => (
+                            <div key={index} className="text-sm">
+                              <div className="flex justify-between items-center">
+                                <span className="font-medium">
+                                  {time.day} at {time.time}
+                                </span>
+                                <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
+                                  Score: {time.engagementScore}/10
+                                </span>
+                              </div>
+                              <p className="text-muted-foreground text-xs mt-1">
+                                {time.reasoning}
+                              </p>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <Lightbulb className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                  <p className="text-muted-foreground">
+                    No AI suggestions available yet. Suggestions will be generated nightly based on your platform analytics.
+                  </p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
     </div>
