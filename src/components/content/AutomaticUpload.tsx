@@ -5,10 +5,12 @@ import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/components/ui/use-toast';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { checkPlatformApiKeys } from '@/services/platformApiCheck';
 import { fetchHashnodeContent, fetchDevToContent, fetchTwitterContent, fetchLinkedInContent } from '@/services/realApiService';
 import { addContentItem } from '@/services/databaseService';
 import { Bot, Clock, Globe } from 'lucide-react';
+import WeeklySchedules from './WeeklySchedules';
 
 interface PlatformConfig {
   id: string;
@@ -22,7 +24,6 @@ interface PlatformConfig {
 const AutomaticUpload = () => {
   const [platforms, setPlatforms] = useState<PlatformConfig[]>([]);
   const [aiOptimizationEnabled, setAiOptimizationEnabled] = useState(true);
-  const [loading, setLoading] = useState(false);
   const { toast } = useToast();
 
   const defaultPlatforms: PlatformConfig[] = [
@@ -124,59 +125,8 @@ const AutomaticUpload = () => {
     
     toast({
       title: `AI optimization ${newValue ? 'enabled' : 'disabled'}`,
-      description: newValue ? 'AI will automatically create content schedules' : 'You will manually set schedules',
+      description: newValue ? 'AI will automatically create and optimize content schedules' : 'You will manually manage schedules',
     });
-  };
-
-  const handleBatchProcess = async () => {
-    setLoading(true);
-    
-    try {
-      const enabledPlatforms = platforms.filter(p => p.enabled && p.hasApiKeys);
-      let processedCount = 0;
-
-      for (const platform of enabledPlatforms) {
-        if (platform.category === 'api') {
-          let result;
-          
-          switch (platform.id) {
-            case 'hashnode':
-              result = await fetchHashnodeContent();
-              break;
-            case 'devTo':
-              result = await fetchDevToContent();
-              break;
-            case 'twitter':
-              result = await fetchTwitterContent();
-              break;
-            case 'linkedin':
-              result = await fetchLinkedInContent();
-              break;
-          }
-          
-          if (result?.success && result.data) {
-            result.data.forEach(item => addContentItem(item));
-            processedCount += result.data.length;
-          }
-        } else if (platform.category === 'csv') {
-          // CSV processing for Instagram/YouTube would be implemented here
-          // This is handled by the existing CSV processing logic
-        }
-      }
-
-      toast({
-        title: 'Batch processing completed',
-        description: `Processed ${processedCount} content items from enabled platforms`,
-      });
-    } catch (error) {
-      toast({
-        title: 'Batch processing failed',
-        description: 'An error occurred while processing content',
-        variant: 'destructive',
-      });
-    } finally {
-      setLoading(false);
-    }
   };
 
   return (
@@ -202,8 +152,8 @@ const AutomaticUpload = () => {
               <Label>AI Auto-Schedule</Label>
               <p className="text-sm text-muted-foreground">
                 {aiOptimizationEnabled 
-                  ? 'AI will automatically create content schedules'
-                  : 'You will manually set content schedules'
+                  ? 'AI will automatically create and optimize content schedules based on analytics'
+                  : 'You will manually create and manage content schedules'
                 }
               </p>
             </div>
@@ -215,65 +165,63 @@ const AutomaticUpload = () => {
         </CardContent>
       </Card>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {platforms.map((platform) => (
-          <Card key={platform.id} className="bg-card/80 backdrop-blur-sm border-border">
-            <CardHeader>
-              <div className="flex justify-between items-start">
-                <div className="flex items-center space-x-3">
-                  <div className={`w-3 h-3 rounded-full ${platform.enabled ? 'bg-green-500' : 'bg-gray-400'}`} />
-                  <div>
-                    <CardTitle className="flex items-center gap-2">
-                      {platform.name}
-                      {platform.category === 'api' && <Globe className="h-4 w-4" />}
-                      {platform.category === 'csv' && <Clock className="h-4 w-4" />}
-                    </CardTitle>
-                    <CardDescription>{platform.description}</CardDescription>
-                  </div>
-                </div>
-                <Switch 
-                  checked={platform.enabled} 
-                  onCheckedChange={() => handlePlatformToggle(platform.id)}
-                />
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                <div className="flex items-center justify-between text-sm">
-                  <span>API Keys:</span>
-                  <span className={platform.hasApiKeys ? 'text-green-500' : 'text-red-500'}>
-                    {platform.hasApiKeys ? 'Configured' : 'Not Configured'}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between text-sm">
-                  <span>Status:</span>
-                  <span className={platform.enabled ? 'text-green-500' : 'text-gray-500'}>
-                    {platform.enabled ? 'Will Process' : 'Excluded'}
-                  </span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+      <Tabs defaultValue="platforms" className="space-y-6">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="platforms">Platform Settings</TabsTrigger>
+          <TabsTrigger value="schedules">Weekly Schedules</TabsTrigger>
+        </TabsList>
 
-      <Card className="bg-card/80 backdrop-blur-sm border-border">
-        <CardHeader>
-          <CardTitle>Batch Processing</CardTitle>
-          <CardDescription>
-            Process content from all enabled platforms with configured API keys
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Button 
-            onClick={handleBatchProcess}
-            disabled={loading || !platforms.some(p => p.enabled && p.hasApiKeys)}
-            className="w-full bg-astrum-purple hover:bg-astrum-purple/80"
-          >
-            {loading ? 'Processing...' : 'Start Batch Processing'}
-          </Button>
-        </CardContent>
-      </Card>
+        <TabsContent value="platforms" className="space-y-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {platforms.map((platform) => (
+              <Card key={platform.id} className="bg-card/80 backdrop-blur-sm border-border">
+                <CardHeader>
+                  <div className="flex justify-between items-start">
+                    <div className="flex items-center space-x-3">
+                      <div className={`w-3 h-3 rounded-full ${platform.enabled ? 'bg-green-500' : 'bg-gray-400'}`} />
+                      <div>
+                        <CardTitle className="flex items-center gap-2">
+                          {platform.name}
+                          {platform.category === 'api' && <Globe className="h-4 w-4" />}
+                          {platform.category === 'csv' && <Clock className="h-4 w-4" />}
+                        </CardTitle>
+                        <CardDescription>{platform.description}</CardDescription>
+                      </div>
+                    </div>
+                    <Switch 
+                      checked={platform.enabled} 
+                      onCheckedChange={() => handlePlatformToggle(platform.id)}
+                    />
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between text-sm">
+                      <span>API Keys:</span>
+                      <span className={platform.hasApiKeys ? 'text-green-500' : 'text-red-500'}>
+                        {platform.hasApiKeys ? 'Configured' : 'Not Configured'}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between text-sm">
+                      <span>Status:</span>
+                      <span className={platform.enabled ? 'text-green-500' : 'text-gray-500'}>
+                        {platform.enabled ? 'Active' : 'Inactive'}
+                      </span>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </TabsContent>
+
+        <TabsContent value="schedules">
+          <WeeklySchedules 
+            platforms={platforms.filter(p => p.enabled && p.hasApiKeys)}
+            aiOptimizationEnabled={aiOptimizationEnabled}
+          />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };
