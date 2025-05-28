@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { ContentItem, Platform } from '@/types';
 import { addContentItem } from '@/services/databaseService';
+import { publishContent } from '@/services/platformPublishService';
 import { useToast } from '@/components/ui/use-toast';
 import PlatformCard from './PlatformCard';
 import PlatformTemplateForm from './PlatformTemplateForm';
@@ -75,7 +76,7 @@ const PlatformUpload: React.FC = () => {
     setSelectedPlatform(null);
   };
   
-  const handleCreateContent = (data: any, publishAction: 'draft' | 'publish' | 'schedule') => {
+  const handleCreateContent = async (data: any, publishAction: 'draft' | 'publish' | 'schedule') => {
     if (!selectedPlatform) return;
     
     // Map platform to content category
@@ -114,7 +115,7 @@ const PlatformUpload: React.FC = () => {
       excerpt: data.excerpt,
       author: 'Default User',
       tags,
-      coverImage: data.coverImage || '',
+      coverImage: data.coverImageUrl || '',
       sourceUrl: data.canonicalUrl || '',
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
@@ -122,19 +123,47 @@ const PlatformUpload: React.FC = () => {
       scheduledDate: data.scheduledDate ? `${data.scheduledDate}T${data.scheduledTime || '00:00'}` : undefined,
       contentType: categoryMap[selectedPlatform],
       category: categoryMap[selectedPlatform],
-      mediaUrls: data.mediaUrls ? (Array.isArray(data.mediaUrls) ? data.mediaUrls : [data.mediaUrls]) : [],
+      mediaUrls: [],
     };
+    
+    // Handle actual publishing
+    if (publishAction === 'publish') {
+      try {
+        const publishResult = await publishContent(selectedPlatform, newContent, data);
+        
+        if (publishResult.success) {
+          newContent.sourceUrl = publishResult.url || '';
+          toast({
+            title: 'Content published successfully',
+            description: `Your content has been published to ${selectedPlatform}`,
+          });
+        } else {
+          newContent.publishStatus = 'failed';
+          toast({
+            title: 'Publishing failed',
+            description: publishResult.error || 'Failed to publish content',
+            variant: 'destructive'
+          });
+        }
+      } catch (error) {
+        newContent.publishStatus = 'failed';
+        toast({
+          title: 'Publishing error',
+          description: 'An unexpected error occurred during publishing',
+          variant: 'destructive'
+        });
+      }
+    } else {
+      // Show success toast for drafts and scheduled content
+      toast({
+        title: publishStatus === 'draft' ? 'Draft saved' : 'Content scheduled',
+        description: publishStatus === 'draft' ? 'Your content has been saved as a draft' : 
+                    `Your content has been scheduled for ${new Date(data.scheduledDate).toLocaleString()}`,
+      });
+    }
     
     // Add the content to the database
     addContentItem(newContent);
-    
-    // Show success toast
-    toast({
-      title: publishStatus === 'draft' ? 'Draft saved' : publishStatus === 'scheduled' ? 'Content scheduled' : 'Content published',
-      description: publishStatus === 'draft' ? 'Your content has been saved as a draft' : 
-                  publishStatus === 'scheduled' ? `Your content has been scheduled for ${new Date(data.scheduledDate).toLocaleString()}` : 
-                  'Your content has been published successfully',
-    });
     
     // Reset platform selection
     setSelectedPlatform(null);
