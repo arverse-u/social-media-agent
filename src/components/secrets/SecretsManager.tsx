@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -10,6 +11,8 @@ import { toast } from '@/components/ui/use-toast';
 import { loadApiKeys, saveApiKeys } from '@/config/apiKeys';
 import { ApiKeys } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
+import { ApiTestService, TestResult } from '@/services/apiTestService';
+import { CheckCircle, XCircle, Loader2 } from 'lucide-react';
 
 const SecretsManager = () => {
   const [keys, setKeys] = React.useState<ApiKeys>({} as ApiKeys);
@@ -17,6 +20,8 @@ const SecretsManager = () => {
   const [showSecrets, setShowSecrets] = React.useState(false);
   const [saving, setSaving] = React.useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = React.useState(false);
+  const [testingConnections, setTestingConnections] = React.useState<Record<string, boolean>>({});
+  const [connectionResults, setConnectionResults] = React.useState<Record<string, TestResult>>({});
 
   React.useEffect(() => {
     const loadedKeys = loadApiKeys();
@@ -53,6 +58,35 @@ const SecretsManager = () => {
       
       return newKeys;
     });
+  };
+
+  const testConnection = async (testKey: string, testFunction: () => Promise<TestResult>) => {
+    setTestingConnections(prev => ({ ...prev, [testKey]: true }));
+    
+    try {
+      const result = await testFunction();
+      setConnectionResults(prev => ({ ...prev, [testKey]: result }));
+      
+      toast({
+        title: result.success ? 'Connection Successful' : 'Connection Failed',
+        description: result.message,
+        variant: result.success ? 'default' : 'destructive',
+      });
+    } catch (error) {
+      const errorResult = {
+        success: false,
+        message: error instanceof Error ? error.message : 'Test failed'
+      };
+      setConnectionResults(prev => ({ ...prev, [testKey]: errorResult }));
+      
+      toast({
+        title: 'Connection Failed',
+        description: errorResult.message,
+        variant: 'destructive',
+      });
+    } finally {
+      setTestingConnections(prev => ({ ...prev, [testKey]: false }));
+    }
   };
 
   const saveToSupabase = async (secretName: string, secretValue: string) => {
@@ -181,6 +215,23 @@ const SecretsManager = () => {
     }
   };
 
+  const renderConnectionStatus = (testKey: string) => {
+    const isLoading = testingConnections[testKey];
+    const result = connectionResults[testKey];
+    
+    if (isLoading) {
+      return <Loader2 className="h-4 w-4 animate-spin text-blue-500" />;
+    }
+    
+    if (result) {
+      return result.success ? 
+        <CheckCircle className="h-4 w-4 text-green-500" /> : 
+        <XCircle className="h-4 w-4 text-red-500" />;
+    }
+    
+    return null;
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -220,7 +271,25 @@ const SecretsManager = () => {
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="space-y-4">
-                <h3 className="text-lg font-medium">Hashnode API</h3>
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-medium">Hashnode API</h3>
+                  <div className="flex items-center space-x-2">
+                    {renderConnectionStatus('hashnode-source')}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => testConnection('hashnode-source', () => 
+                        ApiTestService.testHashnodeSourceApi(
+                          keys.sourceApi?.hashnodeApi?.url || '',
+                          keys.sourceApi?.hashnodeApi?.apiKey || ''
+                        )
+                      )}
+                      disabled={!keys.sourceApi?.hashnodeApi?.url || !keys.sourceApi?.hashnodeApi?.apiKey || testingConnections['hashnode-source']}
+                    >
+                      Test Connection
+                    </Button>
+                  </div>
+                </div>
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                   <div className="space-y-2">
                     <Label htmlFor="hashnode-source-url">API URL</Label>
@@ -248,7 +317,25 @@ const SecretsManager = () => {
               <Separator />
               
               <div className="space-y-4">
-                <h3 className="text-lg font-medium">Dev.to API</h3>
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-medium">Dev.to API</h3>
+                  <div className="flex items-center space-x-2">
+                    {renderConnectionStatus('devto-source')}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => testConnection('devto-source', () => 
+                        ApiTestService.testDevToSourceApi(
+                          keys.sourceApi?.devToApi?.url || '',
+                          keys.sourceApi?.devToApi?.apiKey || ''
+                        )
+                      )}
+                      disabled={!keys.sourceApi?.devToApi?.url || !keys.sourceApi?.devToApi?.apiKey || testingConnections['devto-source']}
+                    >
+                      Test Connection
+                    </Button>
+                  </div>
+                </div>
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                   <div className="space-y-2">
                     <Label htmlFor="devto-source-url">API URL</Label>
@@ -276,7 +363,25 @@ const SecretsManager = () => {
               <Separator />
               
               <div className="space-y-4">
-                <h3 className="text-lg font-medium">LinkedIn API</h3>
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-medium">LinkedIn API</h3>
+                  <div className="flex items-center space-x-2">
+                    {renderConnectionStatus('linkedin-source')}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => testConnection('linkedin-source', () => 
+                        ApiTestService.testLinkedInSourceApi(
+                          keys.sourceApi?.linkedinApi?.url || '',
+                          keys.sourceApi?.linkedinApi?.apiKey || ''
+                        )
+                      )}
+                      disabled={!keys.sourceApi?.linkedinApi?.url || !keys.sourceApi?.linkedinApi?.apiKey || testingConnections['linkedin-source']}
+                    >
+                      Test Connection
+                    </Button>
+                  </div>
+                </div>
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                   <div className="space-y-2">
                     <Label htmlFor="linkedin-source-url">API URL</Label>
@@ -304,7 +409,25 @@ const SecretsManager = () => {
               <Separator />
               
               <div className="space-y-4">
-                <h3 className="text-lg font-medium">X (Twitter) API</h3>
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-medium">X (Twitter) API</h3>
+                  <div className="flex items-center space-x-2">
+                    {renderConnectionStatus('twitter-source')}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => testConnection('twitter-source', () => 
+                        ApiTestService.testTwitterSourceApi(
+                          keys.sourceApi?.twitterApi?.url || '',
+                          keys.sourceApi?.twitterApi?.apiKey || ''
+                        )
+                      )}
+                      disabled={!keys.sourceApi?.twitterApi?.url || !keys.sourceApi?.twitterApi?.apiKey || testingConnections['twitter-source']}
+                    >
+                      Test Connection
+                    </Button>
+                  </div>
+                </div>
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                   <div className="space-y-2">
                     <Label htmlFor="twitter-source-url">API URL</Label>
@@ -444,7 +567,22 @@ const SecretsManager = () => {
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="space-y-4">
-                <h3 className="text-lg font-medium">OpenAI API (Primary)</h3>
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-medium">OpenAI API (Primary)</h3>
+                  <div className="flex items-center space-x-2">
+                    {renderConnectionStatus('openai')}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => testConnection('openai', () => 
+                        ApiTestService.testOpenAiApi(keys.ai?.openai?.apiKey || '')
+                      )}
+                      disabled={!keys.ai?.openai?.apiKey || testingConnections['openai']}
+                    >
+                      Test Connection
+                    </Button>
+                  </div>
+                </div>
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                   <div className="space-y-2">
                     <Label htmlFor="openai-api-key">API Key</Label>
@@ -472,7 +610,22 @@ const SecretsManager = () => {
               <Separator />
               
               <div className="space-y-4">
-                <h3 className="text-lg font-medium">Gemini API (Secondary)</h3>
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-medium">Gemini API (Secondary)</h3>
+                  <div className="flex items-center space-x-2">
+                    {renderConnectionStatus('gemini')}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => testConnection('gemini', () => 
+                        ApiTestService.testGeminiApi(keys.ai?.gemini?.apiKey || '')
+                      )}
+                      disabled={!keys.ai?.gemini?.apiKey || testingConnections['gemini']}
+                    >
+                      Test Connection
+                    </Button>
+                  </div>
+                </div>
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                   <div className="space-y-2">
                     <Label htmlFor="gemini-api-key">API Key</Label>
@@ -500,7 +653,22 @@ const SecretsManager = () => {
               <Separator />
               
               <div className="space-y-4">
-                <h3 className="text-lg font-medium">GroqCloud API (Llama3-8B-8192)</h3>
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-medium">GroqCloud API (Llama3-8B-8192)</h3>
+                  <div className="flex items-center space-x-2">
+                    {renderConnectionStatus('groq')}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => testConnection('groq', () => 
+                        ApiTestService.testGroqApi(keys.ai?.backupAi1?.apiKey || '')
+                      )}
+                      disabled={!keys.ai?.backupAi1?.apiKey || testingConnections['groq']}
+                    >
+                      Test Connection
+                    </Button>
+                  </div>
+                </div>
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                   <div className="space-y-2">
                     <Label htmlFor="groq-api-key">API Key</Label>
@@ -554,7 +722,22 @@ const SecretsManager = () => {
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="space-y-4">
-                <h3 className="text-lg font-medium">Hashnode</h3>
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-medium">Hashnode</h3>
+                  <div className="flex items-center space-x-2">
+                    {renderConnectionStatus('hashnode-platform')}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => testConnection('hashnode-platform', () => 
+                        ApiTestService.testHashnodePlatformApi(keys.hashnode?.token || '')
+                      )}
+                      disabled={!keys.hashnode?.token || testingConnections['hashnode-platform']}
+                    >
+                      Test Connection
+                    </Button>
+                  </div>
+                </div>
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                   <div className="space-y-2">
                     <Label htmlFor="hashnode-token">API Token</Label>
@@ -581,7 +764,22 @@ const SecretsManager = () => {
               <Separator />
               
               <div className="space-y-4">
-                <h3 className="text-lg font-medium">Dev.to</h3>
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-medium">Dev.to</h3>
+                  <div className="flex items-center space-x-2">
+                    {renderConnectionStatus('devto-platform')}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => testConnection('devto-platform', () => 
+                        ApiTestService.testDevToPlatformApi(keys.devTo?.apiKey || '')
+                      )}
+                      disabled={!keys.devTo?.apiKey || testingConnections['devto-platform']}
+                    >
+                      Test Connection
+                    </Button>
+                  </div>
+                </div>
                 <div className="space-y-2">
                   <Label htmlFor="devto-api-key">API Key</Label>
                   <Input 
@@ -621,7 +819,22 @@ const SecretsManager = () => {
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="space-y-4">
-                <h3 className="text-lg font-medium">Twitter/X</h3>
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-medium">Twitter/X</h3>
+                  <div className="flex items-center space-x-2">
+                    {renderConnectionStatus('twitter-platform')}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => testConnection('twitter-platform', () => 
+                        ApiTestService.testTwitterPlatformApi(keys.twitter?.bearerToken || '')
+                      )}
+                      disabled={!keys.twitter?.bearerToken || testingConnections['twitter-platform']}
+                    >
+                      Test Connection
+                    </Button>
+                  </div>
+                </div>
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                   <div className="space-y-2">
                     <Label htmlFor="twitter-api-key">API Key</Label>
@@ -679,7 +892,22 @@ const SecretsManager = () => {
               <Separator />
               
               <div className="space-y-4">
-                <h3 className="text-lg font-medium">LinkedIn</h3>
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-medium">LinkedIn</h3>
+                  <div className="flex items-center space-x-2">
+                    {renderConnectionStatus('linkedin-platform')}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => testConnection('linkedin-platform', () => 
+                        ApiTestService.testLinkedInPlatformApi(keys.linkedin?.accessToken || '')
+                      )}
+                      disabled={!keys.linkedin?.accessToken || testingConnections['linkedin-platform']}
+                    >
+                      Test Connection
+                    </Button>
+                  </div>
+                </div>
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                   <div className="space-y-2">
                     <Label htmlFor="linkedin-client-id">Client ID</Label>
@@ -751,7 +979,22 @@ const SecretsManager = () => {
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="space-y-4">
-                <h3 className="text-lg font-medium">Instagram</h3>
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-medium">Instagram</h3>
+                  <div className="flex items-center space-x-2">
+                    {renderConnectionStatus('instagram-platform')}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => testConnection('instagram-platform', () => 
+                        ApiTestService.testInstagramPlatformApi(keys.instagram?.accessToken || '')
+                      )}
+                      disabled={!keys.instagram?.accessToken || testingConnections['instagram-platform']}
+                    >
+                      Test Connection
+                    </Button>
+                  </div>
+                </div>
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                   <div className="space-y-2">
                     <Label htmlFor="instagram-app-id">App ID</Label>
@@ -798,7 +1041,22 @@ const SecretsManager = () => {
               <Separator />
               
               <div className="space-y-4">
-                <h3 className="text-lg font-medium">YouTube</h3>
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-medium">YouTube</h3>
+                  <div className="flex items-center space-x-2">
+                    {renderConnectionStatus('youtube-platform')}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => testConnection('youtube-platform', () => 
+                        ApiTestService.testYouTubePlatformApi(keys.youtube?.accessToken || '')
+                      )}
+                      disabled={!keys.youtube?.accessToken || testingConnections['youtube-platform']}
+                    >
+                      Test Connection
+                    </Button>
+                  </div>
+                </div>
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                   <div className="space-y-2">
                     <Label htmlFor="youtube-client-id">Client ID</Label>
