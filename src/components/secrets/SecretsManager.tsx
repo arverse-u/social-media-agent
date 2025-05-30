@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -18,8 +17,8 @@ const SecretsManager = () => {
   const [keys, setKeys] = React.useState<ApiKeys>({} as ApiKeys);
   const [originalKeys, setOriginalKeys] = React.useState<ApiKeys>({} as ApiKeys);
   const [showSecrets, setShowSecrets] = React.useState(false);
-  const [saving, setSaving] = React.useState(false);
-  const [hasUnsavedChanges, setHasUnsavedChanges] = React.useState(false);
+  const [saving, setSaving] = React.useState<Record<string, boolean>>({});
+  const [hasUnsavedChanges, setHasUnsavedChanges] = React.useState<Record<string, boolean>>({});
   const [testingConnections, setTestingConnections] = React.useState<Record<string, boolean>>({});
   const [connectionResults, setConnectionResults] = React.useState<Record<string, TestResult>>({});
 
@@ -30,8 +29,29 @@ const SecretsManager = () => {
   }, []);
 
   React.useEffect(() => {
-    const hasChanges = JSON.stringify(keys) !== JSON.stringify(originalKeys);
-    setHasUnsavedChanges(hasChanges);
+    const sourceChanges = JSON.stringify(keys.sourceApi) !== JSON.stringify(originalKeys.sourceApi);
+    const aiChanges = JSON.stringify(keys.ai) !== JSON.stringify(originalKeys.ai);
+    const platformChanges = JSON.stringify({
+      hashnode: keys.hashnode,
+      devTo: keys.devTo,
+      twitter: keys.twitter,
+      linkedin: keys.linkedin,
+      instagram: keys.instagram,
+      youtube: keys.youtube
+    }) !== JSON.stringify({
+      hashnode: originalKeys.hashnode,
+      devTo: originalKeys.devTo,
+      twitter: originalKeys.twitter,
+      linkedin: originalKeys.linkedin,
+      instagram: originalKeys.instagram,
+      youtube: originalKeys.youtube
+    });
+
+    setHasUnsavedChanges({
+      source: sourceChanges,
+      ai: aiChanges,
+      platforms: platformChanges
+    });
   }, [keys, originalKeys]);
 
   const handleInputChange = (category: keyof ApiKeys, field: string, value: string, nestedField?: string) => {
@@ -106,8 +126,8 @@ const SecretsManager = () => {
     }
   };
 
-  const handleSave = async (category: string) => {
-    setSaving(true);
+  const handleSave = async (section: string) => {
+    setSaving(prev => ({ ...prev, [section]: true }));
     
     try {
       // Save to localStorage first
@@ -161,7 +181,7 @@ const SecretsManager = () => {
       
       toast({
         title: 'Secrets saved successfully',
-        description: `${category} secrets have been updated and synced to backend`,
+        description: `${section} secrets have been updated and synced to backend`,
       });
     } catch (error) {
       console.error('Error saving secrets:', error);
@@ -171,15 +191,30 @@ const SecretsManager = () => {
         description: 'There was an error saving your secrets. Please try again.',
       });
     } finally {
-      setSaving(false);
+      setSaving(prev => ({ ...prev, [section]: false }));
     }
   };
 
-  const handleCancel = () => {
-    setKeys(JSON.parse(JSON.stringify(originalKeys)));
+  const handleCancel = (section: string) => {
+    if (section === 'source') {
+      setKeys(prev => ({ ...prev, sourceApi: JSON.parse(JSON.stringify(originalKeys.sourceApi)) }));
+    } else if (section === 'ai') {
+      setKeys(prev => ({ ...prev, ai: JSON.parse(JSON.stringify(originalKeys.ai)) }));
+    } else if (section === 'platforms') {
+      setKeys(prev => ({
+        ...prev,
+        hashnode: JSON.parse(JSON.stringify(originalKeys.hashnode)),
+        devTo: JSON.parse(JSON.stringify(originalKeys.devTo)),
+        twitter: JSON.parse(JSON.stringify(originalKeys.twitter)),
+        linkedin: JSON.parse(JSON.stringify(originalKeys.linkedin)),
+        instagram: JSON.parse(JSON.stringify(originalKeys.instagram)),
+        youtube: JSON.parse(JSON.stringify(originalKeys.youtube))
+      }));
+    }
+    
     toast({
       title: 'Changes discarded',
-      description: 'All unsaved changes have been discarded',
+      description: `${section} changes have been discarded`,
     });
   };
 
@@ -246,14 +281,6 @@ const SecretsManager = () => {
         </div>
       </div>
 
-      {hasUnsavedChanges && (
-        <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
-          <p className="text-amber-800 text-sm">
-            You have unsaved changes. Don't forget to save your changes before leaving this page.
-          </p>
-        </div>
-      )}
-
       <Tabs defaultValue="source" className="w-full">
         <TabsList className="grid grid-cols-3 mb-6">
           <TabsTrigger value="source">Source APIs</TabsTrigger>
@@ -262,6 +289,14 @@ const SecretsManager = () => {
         </TabsList>
         
         <TabsContent value="source" className="space-y-4">
+          {hasUnsavedChanges.source && (
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+              <p className="text-amber-800 text-sm">
+                You have unsaved changes in Source APIs. Don't forget to save your changes.
+              </p>
+            </div>
+          )}
+          
           <Card>
             <CardHeader>
               <CardTitle>Platform Source APIs</CardTitle>
@@ -541,23 +576,31 @@ const SecretsManager = () => {
             <CardFooter className="flex justify-between">
               <Button 
                 variant="outline"
-                onClick={handleCancel}
-                disabled={!hasUnsavedChanges || saving}
+                onClick={() => handleCancel('source')}
+                disabled={!hasUnsavedChanges.source || saving.source}
               >
                 Cancel Changes
               </Button>
               <Button 
-                onClick={() => handleSave('Source APIs')} 
+                onClick={() => handleSave('source')} 
                 className="bg-astrum-blue hover:bg-astrum-blue/80"
-                disabled={saving || !hasUnsavedChanges}
+                disabled={saving.source || !hasUnsavedChanges.source}
               >
-                {saving ? 'Saving...' : 'Save Source API Settings'}
+                {saving.source ? 'Saving...' : 'Save Source API Settings'}
               </Button>
             </CardFooter>
           </Card>
         </TabsContent>
         
         <TabsContent value="ai" className="space-y-4">
+          {hasUnsavedChanges.ai && (
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+              <p className="text-amber-800 text-sm">
+                You have unsaved changes in AI APIs. Don't forget to save your changes.
+              </p>
+            </div>
+          )}
+          
           <Card>
             <CardHeader>
               <CardTitle>AI API Configuration</CardTitle>
@@ -696,23 +739,31 @@ const SecretsManager = () => {
             <CardFooter className="flex justify-between">
               <Button 
                 variant="outline"
-                onClick={handleCancel}
-                disabled={!hasUnsavedChanges || saving}
+                onClick={() => handleCancel('ai')}
+                disabled={!hasUnsavedChanges.ai || saving.ai}
               >
                 Cancel Changes
               </Button>
               <Button 
-                onClick={() => handleSave('AI APIs')} 
+                onClick={() => handleSave('ai')} 
                 className="bg-astrum-blue hover:bg-astrum-blue/80"
-                disabled={saving || !hasUnsavedChanges}
+                disabled={saving.ai || !hasUnsavedChanges.ai}
               >
-                {saving ? 'Saving...' : 'Save AI API Settings'}
+                {saving.ai ? 'Saving...' : 'Save AI API Settings'}
               </Button>
             </CardFooter>
           </Card>
         </TabsContent>
         
         <TabsContent value="platforms" className="space-y-4">
+          {hasUnsavedChanges.platforms && (
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+              <p className="text-amber-800 text-sm">
+                You have unsaved changes in Platform APIs. Don't forget to save your changes.
+              </p>
+            </div>
+          )}
+          
           <Card>
             <CardHeader>
               <CardTitle>Article Platforms</CardTitle>
@@ -795,17 +846,17 @@ const SecretsManager = () => {
             <CardFooter className="flex justify-between">
               <Button 
                 variant="outline"
-                onClick={handleCancel}
-                disabled={!hasUnsavedChanges || saving}
+                onClick={() => handleCancel('platforms')}
+                disabled={!hasUnsavedChanges.platforms || saving.platforms}
               >
                 Cancel Changes
               </Button>
               <Button 
-                onClick={() => handleSave('Article Platforms')} 
+                onClick={() => handleSave('platforms')} 
                 className="bg-astrum-blue hover:bg-astrum-blue/80"
-                disabled={saving || !hasUnsavedChanges}
+                disabled={saving.platforms || !hasUnsavedChanges.platforms}
               >
-                {saving ? 'Saving...' : 'Save Article Platform Settings'}
+                {saving.platforms ? 'Saving...' : 'Save Platform Settings'}
               </Button>
             </CardFooter>
           </Card>
@@ -955,17 +1006,17 @@ const SecretsManager = () => {
             <CardFooter className="flex justify-between">
               <Button 
                 variant="outline"
-                onClick={handleCancel}
-                disabled={!hasUnsavedChanges || saving}
+                onClick={() => handleCancel('platforms')}
+                disabled={!hasUnsavedChanges.platforms || saving.platforms}
               >
                 Cancel Changes
               </Button>
               <Button 
-                onClick={() => handleSave('Social Media Platforms')} 
+                onClick={() => handleSave('platforms')} 
                 className="bg-astrum-blue hover:bg-astrum-blue/80"
-                disabled={saving || !hasUnsavedChanges}
+                disabled={saving.platforms || !hasUnsavedChanges.platforms}
               >
-                {saving ? 'Saving...' : 'Save Social Media Settings'}
+                {saving.platforms ? 'Saving...' : 'Save Platform Settings'}
               </Button>
             </CardFooter>
           </Card>
@@ -1104,17 +1155,17 @@ const SecretsManager = () => {
             <CardFooter className="flex justify-between">
               <Button 
                 variant="outline"
-                onClick={handleCancel}
-                disabled={!hasUnsavedChanges || saving}
+                onClick={() => handleCancel('platforms')}
+                disabled={!hasUnsavedChanges.platforms || saving.platforms}
               >
                 Cancel Changes
               </Button>
               <Button 
-                onClick={() => handleSave('Media Platforms')} 
+                onClick={() => handleSave('platforms')} 
                 className="bg-astrum-blue hover:bg-astrum-blue/80"
-                disabled={saving || !hasUnsavedChanges}
+                disabled={saving.platforms || !hasUnsavedChanges.platforms}
               >
-                {saving ? 'Saving...' : 'Save Media Platform Settings'}
+                {saving.platforms ? 'Saving...' : 'Save Platform Settings'}
               </Button>
             </CardFooter>
           </Card>

@@ -1,7 +1,5 @@
 
 import { loadApiKeys } from '@/config/apiKeys';
-import { generateContentWithGroq } from './groqService';
-import { generateTags } from './geminiService';
 
 export interface TestResult {
   success: boolean;
@@ -130,9 +128,10 @@ export class ApiTestService {
     }
   }
 
-  // Test AI APIs
+  // Test AI APIs with latest approaches (May 2025)
   static async testOpenAiApi(apiKey: string): Promise<TestResult> {
     try {
+      // Using the latest OpenAI API v1 endpoint for model listing
       const response = await fetch('https://api.openai.com/v1/models', {
         method: 'GET',
         headers: {
@@ -148,9 +147,12 @@ export class ApiTestService {
         };
       }
 
+      const data = await response.json();
+      const gpt4Models = data.data?.filter((model: any) => model.id.includes('gpt-4'));
+      
       return {
         success: true,
-        message: 'OpenAI API connection successful!'
+        message: `OpenAI API connection successful! Found ${gpt4Models?.length || 0} GPT-4 models available.`
       };
     } catch (error) {
       return {
@@ -162,10 +164,27 @@ export class ApiTestService {
 
   static async testGeminiApi(apiKey: string): Promise<TestResult> {
     try {
-      const testResult = await generateTags('test content');
+      // Using Gemini 2.0 Flash API test endpoint (latest approach as of May 2025)
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        return {
+          success: false,
+          message: `HTTP ${response.status}: Invalid API key or request failed`
+        };
+      }
+
+      const data = await response.json();
+      const flashModels = data.models?.filter((model: any) => model.name.includes('flash'));
+      
       return {
-        success: testResult.success,
-        message: testResult.success ? 'Gemini API connection successful!' : (testResult.error || 'Gemini API test failed')
+        success: true,
+        message: `Gemini API connection successful! Found ${flashModels?.length || 0} Flash models available.`
       };
     } catch (error) {
       return {
@@ -177,10 +196,28 @@ export class ApiTestService {
 
   static async testGroqApi(apiKey: string): Promise<TestResult> {
     try {
-      const testResult = await generateContentWithGroq('test', apiKey);
+      // Using GroqCloud's latest API approach for model listing (May 2025)
+      const response = await fetch('https://api.groq.com/openai/v1/models', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${apiKey}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        return {
+          success: false,
+          message: `HTTP ${response.status}: Invalid API key or request failed`
+        };
+      }
+
+      const data = await response.json();
+      const llamaModels = data.data?.filter((model: any) => model.id.includes('llama'));
+      
       return {
-        success: testResult.success,
-        message: testResult.success ? 'Groq API connection successful!' : (testResult.error || 'Groq API test failed')
+        success: true,
+        message: `GroqCloud API connection successful! Found ${llamaModels?.length || 0} Llama models available.`
       };
     } catch (error) {
       return {
@@ -190,9 +227,10 @@ export class ApiTestService {
     }
   }
 
-  // Test Platform APIs
+  // Test Platform APIs with latest approaches (May 2025)
   static async testHashnodePlatformApi(token: string): Promise<TestResult> {
     try {
+      // Using Hashnode's latest GraphQL API approach
       const response = await fetch('https://gql.hashnode.com/', {
         method: 'POST',
         headers: {
@@ -233,6 +271,7 @@ export class ApiTestService {
 
   static async testDevToPlatformApi(apiKey: string): Promise<TestResult> {
     try {
+      // Using Dev.to's latest API v1 approach
       const response = await fetch('https://dev.to/api/users/me', {
         method: 'GET',
         headers: {
@@ -263,6 +302,7 @@ export class ApiTestService {
 
   static async testTwitterPlatformApi(bearerToken: string): Promise<TestResult> {
     try {
+      // Using Twitter API v2 latest approach (May 2025)
       const response = await fetch('https://api.twitter.com/2/users/me', {
         method: 'GET',
         headers: {
@@ -281,7 +321,7 @@ export class ApiTestService {
       const data = await response.json();
       return {
         success: true,
-        message: `Connected as ${data.data?.username || 'User'}`
+        message: `Connected as @${data.data?.username || 'User'}`
       };
     } catch (error) {
       return {
@@ -293,6 +333,7 @@ export class ApiTestService {
 
   static async testLinkedInPlatformApi(accessToken: string): Promise<TestResult> {
     try {
+      // Using LinkedIn's latest API v2 approach
       const response = await fetch('https://api.linkedin.com/v2/me', {
         method: 'GET',
         headers: {
@@ -323,6 +364,7 @@ export class ApiTestService {
 
   static async testInstagramPlatformApi(accessToken: string): Promise<TestResult> {
     try {
+      // Using Instagram Basic Display API latest approach
       const response = await fetch(`https://graph.instagram.com/me?fields=id,username&access_token=${accessToken}`, {
         method: 'GET',
       });
@@ -337,7 +379,7 @@ export class ApiTestService {
       const data = await response.json();
       return {
         success: true,
-        message: `Connected as ${data.username || 'User'}`
+        message: `Connected as @${data.username || 'User'}`
       };
     } catch (error) {
       return {
@@ -349,6 +391,7 @@ export class ApiTestService {
 
   static async testYouTubePlatformApi(accessToken: string): Promise<TestResult> {
     try {
+      // Using YouTube Data API v3 latest approach
       const response = await fetch('https://www.googleapis.com/youtube/v3/channels?part=snippet&mine=true', {
         method: 'GET',
         headers: {
