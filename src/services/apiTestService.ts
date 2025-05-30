@@ -131,29 +131,56 @@ export class ApiTestService {
   // Test AI APIs with latest approaches (May 2025)
   static async testOpenAiApi(apiKey: string): Promise<TestResult> {
     try {
-      // Using the latest OpenAI API v1 endpoint for model listing
-      const response = await fetch('https://api.openai.com/v1/models', {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${apiKey}`,
-          'Content-Type': 'application/json',
-        },
-      });
+      // Check if it's a GitHub marketplace token (starts with github_pat_)
+      if (apiKey.startsWith('github_pat_')) {
+        // Using GitHub Models API (Azure OpenAI Service through GitHub)
+        const response = await fetch('https://models.inference.ai.azure.com/models', {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${apiKey}`,
+            'Content-Type': 'application/json',
+          },
+        });
 
-      if (!response.ok) {
+        if (!response.ok) {
+          return {
+            success: false,
+            message: `HTTP ${response.status}: Invalid GitHub marketplace token or request failed`
+          };
+        }
+
+        const data = await response.json();
+        const gpt4Models = data.data?.filter((model: any) => model.id.includes('gpt-4')) || [];
+        
         return {
-          success: false,
-          message: `HTTP ${response.status}: Invalid API key or request failed`
+          success: true,
+          message: `GitHub Models API connection successful! Found ${gpt4Models.length} GPT-4 models available.`
+        };
+      } else {
+        // Regular OpenAI API
+        const response = await fetch('https://api.openai.com/v1/models', {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${apiKey}`,
+            'Content-Type': 'application/json',
+          },
+        });
+
+        if (!response.ok) {
+          return {
+            success: false,
+            message: `HTTP ${response.status}: Invalid OpenAI API key or request failed`
+          };
+        }
+
+        const data = await response.json();
+        const gpt4Models = data.data?.filter((model: any) => model.id.includes('gpt-4')) || [];
+        
+        return {
+          success: true,
+          message: `OpenAI API connection successful! Found ${gpt4Models.length} GPT-4 models available.`
         };
       }
-
-      const data = await response.json();
-      const gpt4Models = data.data?.filter((model: any) => model.id.includes('gpt-4'));
-      
-      return {
-        success: true,
-        message: `OpenAI API connection successful! Found ${gpt4Models?.length || 0} GPT-4 models available.`
-      };
     } catch (error) {
       return {
         success: false,
@@ -175,16 +202,16 @@ export class ApiTestService {
       if (!response.ok) {
         return {
           success: false,
-          message: `HTTP ${response.status}: Invalid API key or request failed`
+          message: `HTTP ${response.status}: Invalid Gemini API key or request failed`
         };
       }
 
       const data = await response.json();
-      const flashModels = data.models?.filter((model: any) => model.name.includes('flash'));
+      const flashModels = data.models?.filter((model: any) => model.name.includes('flash')) || [];
       
       return {
         success: true,
-        message: `Gemini API connection successful! Found ${flashModels?.length || 0} Flash models available.`
+        message: `Gemini API connection successful! Found ${flashModels.length} Flash models available.`
       };
     } catch (error) {
       return {
@@ -208,16 +235,16 @@ export class ApiTestService {
       if (!response.ok) {
         return {
           success: false,
-          message: `HTTP ${response.status}: Invalid API key or request failed`
+          message: `HTTP ${response.status}: Invalid GroqCloud API key or request failed`
         };
       }
 
       const data = await response.json();
-      const llamaModels = data.data?.filter((model: any) => model.id.includes('llama'));
+      const llamaModels = data.data?.filter((model: any) => model.id.includes('llama')) || [];
       
       return {
         success: true,
-        message: `GroqCloud API connection successful! Found ${llamaModels?.length || 0} Llama models available.`
+        message: `GroqCloud API connection successful! Found ${llamaModels.length} Llama models available.`
       };
     } catch (error) {
       return {
@@ -245,7 +272,7 @@ export class ApiTestService {
       if (!response.ok) {
         return {
           success: false,
-          message: `HTTP ${response.status}: Invalid token`
+          message: `HTTP ${response.status}: Invalid Hashnode token`
         };
       }
 
@@ -253,13 +280,13 @@ export class ApiTestService {
       if (data.errors) {
         return {
           success: false,
-          message: 'Invalid Hashnode token'
+          message: 'Invalid Hashnode token or insufficient permissions'
         };
       }
 
       return {
         success: true,
-        message: `Connected as ${data.data?.me?.username || 'User'}`
+        message: `Hashnode connected as ${data.data?.me?.username || 'User'}`
       };
     } catch (error) {
       return {
@@ -283,14 +310,14 @@ export class ApiTestService {
       if (!response.ok) {
         return {
           success: false,
-          message: `HTTP ${response.status}: Invalid API key`
+          message: `HTTP ${response.status}: Invalid Dev.to API key`
         };
       }
 
       const data = await response.json();
       return {
         success: true,
-        message: `Connected as ${data.username || 'User'}`
+        message: `Dev.to connected as ${data.username || 'User'}`
       };
     } catch (error) {
       return {
@@ -314,14 +341,14 @@ export class ApiTestService {
       if (!response.ok) {
         return {
           success: false,
-          message: `HTTP ${response.status}: Invalid bearer token`
+          message: `HTTP ${response.status}: Invalid Twitter bearer token`
         };
       }
 
       const data = await response.json();
       return {
         success: true,
-        message: `Connected as @${data.data?.username || 'User'}`
+        message: `Twitter connected as @${data.data?.username || 'User'}`
       };
     } catch (error) {
       return {
@@ -333,8 +360,8 @@ export class ApiTestService {
 
   static async testLinkedInPlatformApi(accessToken: string): Promise<TestResult> {
     try {
-      // Using LinkedIn's latest API v2 approach
-      const response = await fetch('https://api.linkedin.com/v2/me', {
+      // Using LinkedIn's latest API v2 approach (May 2025)
+      const response = await fetch('https://api.linkedin.com/v2/userinfo', {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${accessToken}`,
@@ -345,14 +372,14 @@ export class ApiTestService {
       if (!response.ok) {
         return {
           success: false,
-          message: `HTTP ${response.status}: Invalid access token`
+          message: `HTTP ${response.status}: Invalid LinkedIn access token`
         };
       }
 
       const data = await response.json();
       return {
         success: true,
-        message: `Connected as ${data.localizedFirstName || 'User'}`
+        message: `LinkedIn connected as ${data.given_name || data.name || 'User'}`
       };
     } catch (error) {
       return {
@@ -364,22 +391,32 @@ export class ApiTestService {
 
   static async testInstagramPlatformApi(accessToken: string): Promise<TestResult> {
     try {
-      // Using Instagram Basic Display API latest approach
+      // Using Instagram Basic Display API latest approach (May 2025)
       const response = await fetch(`https://graph.instagram.com/me?fields=id,username&access_token=${accessToken}`, {
         method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
       });
 
       if (!response.ok) {
         return {
           success: false,
-          message: `HTTP ${response.status}: Invalid access token`
+          message: `HTTP ${response.status}: Invalid Instagram access token`
         };
       }
 
       const data = await response.json();
+      if (data.error) {
+        return {
+          success: false,
+          message: `Instagram API Error: ${data.error.message}`
+        };
+      }
+
       return {
         success: true,
-        message: `Connected as @${data.username || 'User'}`
+        message: `Instagram connected as @${data.username || 'User'}`
       };
     } catch (error) {
       return {
@@ -391,7 +428,7 @@ export class ApiTestService {
 
   static async testYouTubePlatformApi(accessToken: string): Promise<TestResult> {
     try {
-      // Using YouTube Data API v3 latest approach
+      // Using YouTube Data API v3 latest approach (May 2025)
       const response = await fetch('https://www.googleapis.com/youtube/v3/channels?part=snippet&mine=true', {
         method: 'GET',
         headers: {
@@ -403,14 +440,21 @@ export class ApiTestService {
       if (!response.ok) {
         return {
           success: false,
-          message: `HTTP ${response.status}: Invalid access token`
+          message: `HTTP ${response.status}: Invalid YouTube access token`
         };
       }
 
       const data = await response.json();
+      if (data.error) {
+        return {
+          success: false,
+          message: `YouTube API Error: ${data.error.message}`
+        };
+      }
+
       return {
         success: true,
-        message: `Connected as ${data.items?.[0]?.snippet?.title || 'User'}`
+        message: `YouTube connected as ${data.items?.[0]?.snippet?.title || 'User'}`
       };
     } catch (error) {
       return {

@@ -584,7 +584,7 @@ const SecretsManager = () => {
               <Button 
                 onClick={() => handleSave('source')} 
                 className="bg-astrum-blue hover:bg-astrum-blue/80"
-                disabled={saving.source || !hasUnsavedChanges.source}
+                disabled={saving.source}
               >
                 {saving.source ? 'Saving...' : 'Save Source API Settings'}
               </Button>
@@ -611,7 +611,7 @@ const SecretsManager = () => {
             <CardContent className="space-y-6">
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-medium">OpenAI API (Primary)</h3>
+                  <h3 className="text-lg font-medium">OpenAI API / GitHub Models</h3>
                   <div className="flex items-center space-x-2">
                     {renderConnectionStatus('openai')}
                     <Button
@@ -634,8 +634,11 @@ const SecretsManager = () => {
                       value={keys.ai?.openai?.apiKey || ''} 
                       onChange={(e) => handleInputChange('ai', 'openai', e.target.value, 'apiKey')}
                       type={showSecrets ? "text" : "password"} 
-                      placeholder="Enter OpenAI API key" 
+                      placeholder="Enter OpenAI API key or GitHub token (github_pat_...)" 
                     />
+                    <p className="text-xs text-muted-foreground">
+                      Use GitHub marketplace token (github_pat_...) for GitHub Models API
+                    </p>
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="openai-daily-limit">Daily Usage Limit</Label>
@@ -654,7 +657,7 @@ const SecretsManager = () => {
               
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-medium">Gemini API (Secondary)</h3>
+                  <h3 className="text-lg font-medium">Gemini 2.0 Flash</h3>
                   <div className="flex items-center space-x-2">
                     {renderConnectionStatus('gemini')}
                     <Button
@@ -697,7 +700,7 @@ const SecretsManager = () => {
               
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-medium">GroqCloud API (Llama3-8B-8192)</h3>
+                  <h3 className="text-lg font-medium">GroqCloud (Llama3-8B-8192)</h3>
                   <div className="flex items-center space-x-2">
                     {renderConnectionStatus('groq')}
                     <Button
@@ -747,7 +750,7 @@ const SecretsManager = () => {
               <Button 
                 onClick={() => handleSave('ai')} 
                 className="bg-astrum-blue hover:bg-astrum-blue/80"
-                disabled={saving.ai || !hasUnsavedChanges.ai}
+                disabled={saving.ai}
               >
                 {saving.ai ? 'Saving...' : 'Save AI API Settings'}
               </Button>
@@ -854,9 +857,9 @@ const SecretsManager = () => {
               <Button 
                 onClick={() => handleSave('platforms')} 
                 className="bg-astrum-blue hover:bg-astrum-blue/80"
-                disabled={saving.platforms || !hasUnsavedChanges.platforms}
+                disabled={saving.platforms}
               >
-                {saving.platforms ? 'Saving...' : 'Save Platform Settings'}
+                {saving.platforms ? 'Saving...' : 'Save Article Platform Settings'}
               </Button>
             </CardFooter>
           </Card>
@@ -1014,9 +1017,9 @@ const SecretsManager = () => {
               <Button 
                 onClick={() => handleSave('platforms')} 
                 className="bg-astrum-blue hover:bg-astrum-blue/80"
-                disabled={saving.platforms || !hasUnsavedChanges.platforms}
+                disabled={saving.platforms}
               >
-                {saving.platforms ? 'Saving...' : 'Save Platform Settings'}
+                {saving.platforms ? 'Saving...' : 'Save Social Platform Settings'}
               </Button>
             </CardFooter>
           </Card>
@@ -1163,9 +1166,9 @@ const SecretsManager = () => {
               <Button 
                 onClick={() => handleSave('platforms')} 
                 className="bg-astrum-blue hover:bg-astrum-blue/80"
-                disabled={saving.platforms || !hasUnsavedChanges.platforms}
+                disabled={saving.platforms}
               >
-                {saving.platforms ? 'Saving...' : 'Save Platform Settings'}
+                {saving.platforms ? 'Saving...' : 'Save Media Platform Settings'}
               </Button>
             </CardFooter>
           </Card>
