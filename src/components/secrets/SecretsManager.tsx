@@ -573,17 +573,18 @@ const SecretsManager = () => {
                 </div>
               </div>
             </CardContent>
-            <CardFooter className="flex justify-between">
+            <CardFooter className="flex flex-row items-center justify-between gap-4 p-6">
               <Button 
                 variant="outline"
                 onClick={() => handleCancel('source')}
                 disabled={!hasUnsavedChanges.source || saving.source}
+                className="flex-shrink-0"
               >
                 Cancel Changes
               </Button>
               <Button 
                 onClick={() => handleSave('source')} 
-                className="bg-astrum-blue hover:bg-astrum-blue/80"
+                className="bg-astrum-blue hover:bg-astrum-blue/80 flex-shrink-0"
                 disabled={saving.source}
               >
                 {saving.source ? 'Saving...' : 'Save Source APIs'}
@@ -739,17 +740,18 @@ const SecretsManager = () => {
                 </div>
               </div>
             </CardContent>
-            <CardFooter className="flex justify-between">
+            <CardFooter className="flex flex-row items-center justify-between gap-4 p-6">
               <Button 
                 variant="outline"
                 onClick={() => handleCancel('ai')}
                 disabled={!hasUnsavedChanges.ai || saving.ai}
+                className="flex-shrink-0"
               >
                 Cancel Changes
               </Button>
               <Button 
                 onClick={() => handleSave('ai')} 
-                className="bg-astrum-blue hover:bg-astrum-blue/80"
+                className="bg-astrum-blue hover:bg-astrum-blue/80 flex-shrink-0"
                 disabled={saving.ai}
               >
                 {saving.ai ? 'Saving...' : 'Save AI APIs'}
@@ -834,29 +836,32 @@ const SecretsManager = () => {
                     </Button>
                   </div>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="devto-api-key">API Key</Label>
-                  <Input 
-                    id="devto-api-key" 
-                    value={keys.devTo?.apiKey || ''} 
-                    onChange={(e) => handleInputChange('devTo', 'apiKey', e.target.value)}
-                    type={showSecrets ? "text" : "password"} 
-                    placeholder="Enter Dev.to API key" 
-                  />
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="devto-api-key">API Key</Label>
+                    <Input 
+                      id="devto-api-key" 
+                      value={keys.devTo?.apiKey || ''} 
+                      onChange={(e) => handleInputChange('devTo', 'apiKey', e.target.value)}
+                      type={showSecrets ? "text" : "password"} 
+                      placeholder="Enter Dev.to API key" 
+                    />
+                  </div>
                 </div>
               </div>
             </CardContent>
-            <CardFooter className="flex justify-between">
+            <CardFooter className="flex flex-row items-center justify-between gap-4 p-6">
               <Button 
                 variant="outline"
                 onClick={() => handleCancel('platforms')}
                 disabled={!hasUnsavedChanges.platforms || saving.platforms}
+                className="flex-shrink-0"
               >
                 Cancel Changes
               </Button>
               <Button 
                 onClick={() => handleSave('platforms')} 
-                className="bg-astrum-blue hover:bg-astrum-blue/80"
+                className="bg-astrum-blue hover:bg-astrum-blue/80 flex-shrink-0"
                 disabled={saving.platforms}
               >
                 {saving.platforms ? 'Saving...' : 'Save Article Platforms'}
@@ -1006,17 +1011,18 @@ const SecretsManager = () => {
                 </div>
               </div>
             </CardContent>
-            <CardFooter className="flex justify-between">
+            <CardFooter className="flex flex-row items-center justify-between gap-4 p-6">
               <Button 
                 variant="outline"
                 onClick={() => handleCancel('platforms')}
                 disabled={!hasUnsavedChanges.platforms || saving.platforms}
+                className="flex-shrink-0"
               >
                 Cancel Changes
               </Button>
               <Button 
                 onClick={() => handleSave('platforms')} 
-                className="bg-astrum-blue hover:bg-astrum-blue/80"
+                className="bg-astrum-blue hover:bg-astrum-blue/80 flex-shrink-0"
                 disabled={saving.platforms}
               >
                 {saving.platforms ? 'Saving...' : 'Save Social Platforms'}
@@ -1155,17 +1161,18 @@ const SecretsManager = () => {
                 </div>
               </div>
             </CardContent>
-            <CardFooter className="flex justify-between">
+            <CardFooter className="flex flex-row items-center justify-between gap-4 p-6">
               <Button 
                 variant="outline"
                 onClick={() => handleCancel('platforms')}
                 disabled={!hasUnsavedChanges.platforms || saving.platforms}
+                className="flex-shrink-0"
               >
                 Cancel Changes
               </Button>
               <Button 
                 onClick={() => handleSave('platforms')} 
-                className="bg-astrum-blue hover:bg-astrum-blue/80"
+                className="bg-astrum-blue hover:bg-astrum-blue/80 flex-shrink-0"
                 disabled={saving.platforms}
               >
                 {saving.platforms ? 'Saving...' : 'Save Media Platforms'}
