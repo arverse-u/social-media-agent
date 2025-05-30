@@ -16,6 +16,58 @@ interface VideoContentItem {
   content: string;
 }
 
+interface FetchContentFromSourcesParams {
+  platforms: string[];
+  apiKeys: any;
+}
+
+export async function fetchContentFromSources(params: FetchContentFromSourcesParams): Promise<ContentItem[]> {
+  const { platforms, apiKeys } = params;
+  const allContent: ContentItem[] = [];
+
+  for (const platform of platforms) {
+    try {
+      console.log(`Fetching content for platform: ${platform}`);
+      
+      // Get source URL from API keys based on platform
+      const sourceUrl = getSourceUrlForPlatform(platform, apiKeys);
+      if (!sourceUrl) {
+        console.log(`No source URL configured for ${platform}`);
+        continue;
+      }
+
+      const result = await fetchAndProcessSourceContent(platform, sourceUrl);
+      if (result.success && result.data) {
+        allContent.push(...result.data);
+      }
+    } catch (error) {
+      console.error(`Error fetching content for ${platform}:`, error);
+    }
+  }
+
+  return allContent;
+}
+
+function getSourceUrlForPlatform(platform: string, apiKeys: any): string | null {
+  // Map platform to their source API configurations
+  switch (platform) {
+    case 'hashnode':
+      return apiKeys.sourceApi?.hashnodeApi?.url || null;
+    case 'devTo':
+      return apiKeys.sourceApi?.devToApi?.url || null;
+    case 'twitter':
+      return apiKeys.sourceApi?.twitterApi?.url || null;
+    case 'linkedin':
+      return apiKeys.sourceApi?.linkedinApi?.url || null;
+    case 'instagram':
+      return apiKeys.sourceApi?.instagramApi?.url || null;
+    case 'youtube':
+      return apiKeys.sourceApi?.youtubeApi?.url || null;
+    default:
+      return null;
+  }
+}
+
 export async function fetchAndProcessSourceContent(
   platform: string,
   sourceUrl: string

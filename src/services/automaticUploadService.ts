@@ -61,7 +61,7 @@ export class AutomaticUploadService {
     try {
       const now = new Date();
       const currentTime = now.toTimeString().slice(0, 5); // HH:MM format
-      const currentDay = now.toLocaleDateString('en-US', { weekday: 'lowercase' });
+      const currentDay = now.toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
       
       console.log(`Checking schedules for ${currentDay} at ${currentTime}`);
 
