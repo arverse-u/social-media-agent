@@ -586,7 +586,7 @@ const SecretsManager = () => {
                 className="bg-astrum-blue hover:bg-astrum-blue/80"
                 disabled={saving.source}
               >
-                {saving.source ? 'Saving...' : 'Save Source API Settings'}
+                {saving.source ? 'Saving...' : 'Save Source APIs'}
               </Button>
             </CardFooter>
           </Card>
@@ -752,7 +752,7 @@ const SecretsManager = () => {
                 className="bg-astrum-blue hover:bg-astrum-blue/80"
                 disabled={saving.ai}
               >
-                {saving.ai ? 'Saving...' : 'Save AI API Settings'}
+                {saving.ai ? 'Saving...' : 'Save AI APIs'}
               </Button>
             </CardFooter>
           </Card>
@@ -859,7 +859,7 @@ const SecretsManager = () => {
                 className="bg-astrum-blue hover:bg-astrum-blue/80"
                 disabled={saving.platforms}
               >
-                {saving.platforms ? 'Saving...' : 'Save Article Platform Settings'}
+                {saving.platforms ? 'Saving...' : 'Save Article Platforms'}
               </Button>
             </CardFooter>
           </Card>
@@ -1019,7 +1019,7 @@ const SecretsManager = () => {
                 className="bg-astrum-blue hover:bg-astrum-blue/80"
                 disabled={saving.platforms}
               >
-                {saving.platforms ? 'Saving...' : 'Save Social Platform Settings'}
+                {saving.platforms ? 'Saving...' : 'Save Social Platforms'}
               </Button>
             </CardFooter>
           </Card>
@@ -1168,7 +1168,7 @@ const SecretsManager = () => {
                 className="bg-astrum-blue hover:bg-astrum-blue/80"
                 disabled={saving.platforms}
               >
-                {saving.platforms ? 'Saving...' : 'Save Media Platform Settings'}
+                {saving.platforms ? 'Saving...' : 'Save Media Platforms'}
               </Button>
             </CardFooter>
           </Card>
