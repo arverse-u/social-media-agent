@@ -163,17 +163,10 @@ export class ApiTestService {
   static async testGeminiApi(apiKey: string): Promise<TestResult> {
     try {
       const testResult = await generateTags('test content');
-      if (testResult.success) {
-        return {
-          success: true,
-          message: 'Gemini API connection successful!'
-        };
-      } else {
-        return {
-          success: false,
-          message: testResult.error || 'Gemini API test failed'
-        };
-      }
+      return {
+        success: testResult.success,
+        message: testResult.success ? 'Gemini API connection successful!' : (testResult.error || 'Gemini API test failed')
+      };
     } catch (error) {
       return {
         success: false,
@@ -185,17 +178,10 @@ export class ApiTestService {
   static async testGroqApi(apiKey: string): Promise<TestResult> {
     try {
       const testResult = await generateContentWithGroq('test', apiKey);
-      if (testResult.success) {
-        return {
-          success: true,
-          message: 'Groq API connection successful!'
-        };
-      } else {
-        return {
-          success: false,
-          message: testResult.error || 'Groq API test failed'
-        };
-      }
+      return {
+        success: testResult.success,
+        message: testResult.success ? 'Groq API connection successful!' : (testResult.error || 'Groq API test failed')
+      };
     } catch (error) {
       return {
         success: false,
